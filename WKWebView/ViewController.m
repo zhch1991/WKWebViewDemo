@@ -19,17 +19,19 @@ WKScriptMessageHandler
 >
 
 @property (nonatomic, strong) WKWebView *webView;
-@property (nonatomic, strong, readonly) JSContext    *jsContext;
+@property (nonatomic, strong, readonly) JSContext *jsContext; //WK貌似不能配合JavaScriptCore使用
 
 @end
 
 @implementation ViewController
 
+#pragma mark - lifeCycle
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self webView];
 }
 
+#pragma mark - getter/setter
 - (WKWebView *)webView
 {
     if(!_webView)
@@ -41,13 +43,10 @@ WKScriptMessageHandler
         // WKWebView的配置
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
         configuration.userContentController = userContentController;
-        
         _webView = [[WKWebView alloc] initWithFrame:self.view.bounds configuration:configuration];
         _webView.navigationDelegate = self;
         _webView.UIDelegate = self;
-        
         [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];
-        
         
         NSString *path = [[NSBundle mainBundle] bundlePath];
         NSURL *baseURL = [NSURL fileURLWithPath:path];
@@ -65,6 +64,7 @@ WKScriptMessageHandler
     return _webView;
 }
 
+#pragma mark - delegates
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context
 {
     if (object == _webView && [keyPath isEqualToString:@"estimatedProgress"] ) {
@@ -74,51 +74,61 @@ WKScriptMessageHandler
     }
 }
 
-// 页面开始加载时调用
+#pragma mark -- WKNavigationDelegate
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation
 {
-//    NSLog(@"%s", __func__);
+    // 页面开始加载时调用
+    NSLog(@"%s", __func__);
 }
-// 当内容开始返回时调用
+
 - (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation
 {
-//    NSLog(@"%s", __func__);
+    // 当内容开始返回时调用
+    NSLog(@"%s", __func__);
 }
-// 页面加载完成之后调用
+
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation
 {
-//    _jsContext = [webView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
+    // 页面加载完成之后调用
+    //    _jsContext = [webView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
     [_webView evaluateJavaScript:@"navigator.userAgent" completionHandler:^(id _Nullable string, NSError * _Nullable error) {
         NSLog(@"string = %@", string);
     }];
 }
-// 页面加载失败时调用
+
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation
 {
-//    NSLog(@"%s", __func__);
+    // 页面加载失败时调用
+    NSLog(@"%s", __func__);
 }
 
-// 接收到服务器跳转请求之后调用
 - (void)webView:(WKWebView *)webView didReceiveServerRedirectForProvisionalNavigation:(WKNavigation *)navigation
 {
-//    NSLog(@"%s", __func__);
+    //接收到服务器跳转请求之后调用
+    NSLog(@"%s", __func__);
 }
-// 在收到响应后，决定是否跳转
+
+
+#pragma mark --WKScriptMessageHandler
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler
 {
-//    NSLog(@"%s", __func__);
+    // 在收到响应后，决定是否跳转
+    NSLog(@"%s", __func__);
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
-// 在发送请求之前，决定是否跳转
+
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
-//    NSLog(@"%s", __func__);
+    // 在发送请求之前，决定是否跳转
+    NSLog(@"%s", __func__);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
+
+#pragma mark -- WKUIDelegate
 -(void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
 {
-    
+    //捕获JS中的alert事件
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"alert"message:@"JS调用alert"preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         
@@ -130,9 +140,10 @@ WKScriptMessageHandler
     
 }
 
+
 -(void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString * _Nullable))completionHandler
 {
-    
+    //捕获JS中的输入事件
 }
 
 -(void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler
